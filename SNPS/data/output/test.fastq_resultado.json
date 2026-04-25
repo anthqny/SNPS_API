@@ -1,0 +1,33 @@
+{
+    "archivo": "test.fastq",
+    "tipo": "FASTQ",
+    "total_snps": 3,
+    "calidad_promedio": 40.0,
+    "porcentaje_bases_buenas": 1.0,
+    "snps": [
+        {
+            "posicion": 5,
+            "referencia": "T",
+            "mutacion": "A",
+            "tipo": "SNP",
+            "phred": 40,
+            "confianza": 0.9999
+        },
+        {
+            "posicion": 6,
+            "referencia": "A",
+            "mutacion": "T",
+            "tipo": "SNP",
+            "phred": 40,
+            "confianza": 0.9999
+        },
+        {
+            "posicion": 7,
+            "referencia": "C",
+            "mutacion": "T",
+            "tipo": "SNP",
+            "phred": 40,
+            "confianza": 0.9999
+        }
+    ]
+}

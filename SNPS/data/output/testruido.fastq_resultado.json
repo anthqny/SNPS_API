@@ -1,0 +1,8 @@
+{
+    "archivo": "testruido.fastq",
+    "tipo": "FASTQ",
+    "total_snps": 0,
+    "calidad_promedio": 13.33,
+    "porcentaje_bases_buenas": 0.33,
+    "snps": []
+}
