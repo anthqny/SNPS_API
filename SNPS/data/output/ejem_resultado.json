@@ -1,0 +1,16 @@
+{
+    "archivo": "ejem.fasta",
+    "total_snps": 2,
+    "snps": [
+        {
+            "posicion": 3,
+            "referencia": "C",
+            "mutacion": "G"
+        },
+        {
+            "posicion": 8,
+            "referencia": "G",
+            "mutacion": "C"
+        }
+    ]
+}

@@ -1,0 +1,11 @@
+{
+    "archivo": "ejem2.fasta",
+    "total_snps": 1,
+    "snps": [
+        {
+            "posicion": 4,
+            "referencia": "A",
+            "mutacion": "T"
+        }
+    ]
+}
