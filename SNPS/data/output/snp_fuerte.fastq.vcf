@@ -5,4 +5,4 @@
 ##INFO=<ID=DP,Number=1,Type=Integer,Description="Depth">
 ##INFO=<ID=GT,Number=1,Type=String,Description="Genotype">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
-chr1	3	.	C	G	60	PASS	AF=1.0;DP=5;GT=HOM
+chr1	3	.	C	G	60.0	PASS	AF=1.0;DP=5;GT=HOM

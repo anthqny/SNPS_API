@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>SNP Detector</title>
+
+    <style>
+
+        body{
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container{
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+
+        h1{
+            color: #222;
+        }
+
+        input{
+            margin-top: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        button{
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover{
+            background: #1d4ed8;
+        }
+
+        .resultado{
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .snp{
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🧬 SNP Detector</h1>
+
+        <form
+            action="/upload"
+            method="post"
+            enctype="multipart/form-data"
+        >
+
+            <label>
+                Archivo FASTA (referencia)
+            </label>
+
+            <input
+                type="file"
+                name="fasta"
+                required
+            >
+
+            <label>
+                Archivo FASTQ (reads)
+            </label>
+
+            <input
+                type="file"
+                name="fastq"
+                required
+            >
+
+            <button type="submit">
+                Analizar SNPs
+            </button>
+
+        </form>
+
+        {% if resultados %}
+
+            <div class="resultado">
+
+                <h2>
+                    Resultados SNP
+                </h2>
+
+                {% for r in resultados %}
+
+                    <div class="snp">
+
+                        <strong>
+                            Posición {{ r.pos }}
+                        </strong>
+
+                        <br>
+
+                        {{ r.ref }}
+                        →
+                        {{ r.alt }}
+
+                        <br>
+
+                        AF:
+                        {{ r.af }}
+
+                        <br>
+
+                        DP:
+                        {{ r.dp }}
+
+                        <br>
+
+                        QUAL:
+                        {{ r.qual }}
+
+                        <br>
+
+                        GT:
+                        {{ r.gt }}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>

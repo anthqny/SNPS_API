@@ -46,18 +46,11 @@ def read_fasta(file_name):
 
     return sequences
 
-
-# 🔥 NUEVA FUNCIÓN (CLAVE)
 def validar_fasta_para_snp(datos):
-    """
-    Pipeline moderno:
-    - solo usamos UNA referencia
-    """
-
+    
     if not datos:
         raise ValueError("FASTA vacío")
 
-    # tomar la primera secuencia como referencia
     ref = list(datos.values())[0]
 
     return ref, None

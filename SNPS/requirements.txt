@@ -1,2 +1,6 @@
 pytest
 biopython==1.83
+fastapi
+uvicorn
+jinja2
+python-multipart
