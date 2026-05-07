@@ -1,0 +1,8 @@
+##fileformat=VCFv4.2
+##fileDate=20260506
+##source=MiVariantCaller_v3.0
+##INFO=<ID=AF,Number=1,Type=Float,Description="Allele Frequency">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Depth">
+##INFO=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr1	3	.	C	G	60	PASS	AF=1.0;DP=5;GT=HOM

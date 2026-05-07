@@ -2,199 +2,112 @@ import os
 
 from parser import read_fasta, validar_fasta_para_snp
 from fastq_parser import read_fastq
-from quality import filtrar_calidad, calidad_promedio, porcentaje_buenas
+from quality import filtrar_calidad
 from aligner import alinear
-from snp_detector import detectar_snps
+from variant_counter import contar_variantes
+from snp_detector import detectar_snps_con_af
 from utils import guardar_json
+from vcf_writer import escribir_vcf
 
 
 def formatear_snps(nombre_archivo, snps):
-    print(f"\n📄 Archivo: {nombre_archivo}")
+    print(f"\nArchivo: {nombre_archivo}")
 
     if not snps:
-        print("  ✔ No se encontraron SNPs")
+        print("  No se encontraron SNPs")
         return
 
     for snp in snps:
-        linea = (
-            f"  🔹 Posición {snp['posicion']}: "
-            f"{snp['referencia']} → {snp['mutacion']}"
+        print(
+            f"  🔹 Pos {snp['posicion']}: "
+            f"{snp['referencia']}→{snp['mutacion']} "
+            f"| AF={snp['af']} | DP={snp['depth']} "
+            f"| QUAL={snp['qual']} | GT={snp['genotipo']}"
         )
 
-        if "confianza" in snp:
-            linea += f" | Q={snp['phred']} | conf={snp['confianza']}"
 
-        print(linea)
-
-
-# -------------------------
-# FASTA
-# -------------------------
-def procesar_fasta(ruta_archivo):
-    datos = read_fasta(ruta_archivo)
-    ref, paciente = validar_fasta_para_snp(datos)
-
-    ref_aligned, paciente_aligned = alinear(ref, paciente)
-
-    snps = detectar_snps(ref_aligned, paciente_aligned)
-
-    return snps
-
-
-# -------------------------
-# FASTQ
-# -------------------------
 def procesar_fastq(ruta_archivo, ref_global, nombre_archivo):
     reads = read_fastq(ruta_archivo)
 
     if not reads:
-        raise ValueError("El archivo FASTQ no contiene lecturas")
+        raise ValueError("FASTQ vacío")
 
-    # MVP: usar solo el primer read
-    read = reads[0]
+    reads_alineados = []
+    ref_aligned_global = None
 
-    seq_filtrada = filtrar_calidad(read["seq"], read["qual"])
-    calidad = calidad_promedio(read["qual"])
-    porcentaje = porcentaje_buenas(read["qual"])
+    for read in reads:
+        seq_filtrada = filtrar_calidad(read["seq"], read["qual"])
 
-    ref_aligned, paciente_aligned = alinear(ref_global, seq_filtrada)
+        if not seq_filtrada or set(seq_filtrada) == {"N"}:
+            continue
 
-    snps = detectar_snps(ref_aligned, paciente_aligned, read["qual"])
+        ref_aligned, read_aligned = alinear(ref_global, seq_filtrada)
 
-    # ⚠ warning bien contextualizado
-    if calidad < 20:
-        print(f"[WARN] {nombre_archivo}: Baja calidad ({calidad:.2f})")
+        ref_aligned_global = ref_aligned
+        reads_alineados.append(read_aligned)
 
-    return snps, calidad, porcentaje
+    if not reads_alineados:
+        print(f"[WARN] {nombre_archivo}: sin lecturas útiles")
+        return []
+
+    conteo = contar_variantes(ref_aligned_global, reads_alineados)
+
+    snps = detectar_snps_con_af(ref_aligned_global, conteo)
+
+    return snps
 
 
-# -------------------------
-# MAIN
-# -------------------------
 def main():
-    try:
-        base_dir = os.path.dirname(os.path.dirname(__file__))
+    base_dir = os.path.dirname(os.path.dirname(__file__))
 
-        input_dir = os.path.join(base_dir, "data", "input")
-        output_dir = os.path.join(base_dir, "data", "output")
+    input_dir = os.path.join(base_dir, "data", "input")
+    output_dir = os.path.join(base_dir, "data", "output")
 
-        archivos = os.listdir(input_dir)
+    os.makedirs(output_dir, exist_ok=True)
 
-        fasta_files = [f for f in archivos if f.lower().endswith((".fasta", ".fa", ".fna"))]
-        fastq_files = [f for f in archivos if f.lower().endswith(".fastq")]
-        otros_archivos = [
-            f for f in archivos
-            if f not in fasta_files and f not in fastq_files
-        ]
+    archivos = os.listdir(input_dir)
 
-        if otros_archivos:
-            print("\n⚠ Archivos ignorados:")
-            for f in otros_archivos:
-                print(f"   - {f}")
+    fasta_files = [f for f in archivos if f.endswith((".fasta", ".fa"))]
+    fastq_files = [f for f in archivos if f.endswith(".fastq")]
 
-        if not fasta_files and not fastq_files:
-            print("\n❌ No hay archivos FASTA o FASTQ para procesar")
-            return
+    if not fasta_files:
+        print("Necesitas un FASTA de referencia")
+        return
 
-        print(f"\n🚀 Procesando {len(fasta_files)} FASTA y {len(fastq_files)} FASTQ...\n")
+    
+    ref_path = os.path.join(input_dir, fasta_files[0])
 
-        resumen_total = []
+    datos = read_fasta(ref_path)
+    ref_global, _ = validar_fasta_para_snp(datos)
 
-        # -------------------------
-        # FASTA
-        # -------------------------
-        for archivo in fasta_files:
-            ruta = os.path.join(input_dir, archivo)
-            nombre_salida = archivo + "_resultado.json"
-            ruta_output = os.path.join(output_dir, nombre_salida)
+    print(f"\Procesando {len(fastq_files)} FASTQ...\n")
 
-            try:
-                snps = procesar_fasta(ruta)
+    resumen = []
 
-                formatear_snps(archivo, snps)
+    for archivo in fastq_files:
+        ruta = os.path.join(input_dir, archivo)
 
-                guardar_json({
-                    "archivo": archivo,
-                    "tipo": "FASTA",
-                    "total_snps": len(snps),
-                    "snps": snps
-                }, ruta_output)
+        try:
+            snps = procesar_fastq(ruta, ref_global, archivo)
 
-                resumen_total.append({
-                    "archivo": archivo,
-                    "tipo": "FASTA",
-                    "total_snps": len(snps)
-                })
+            formatear_snps(archivo, snps)
 
-            except Exception as e:
-                print(f"\n❌ Error en {archivo}: {e}")
+            json_out = os.path.join(output_dir, archivo + ".json")
+            vcf_out = os.path.join(output_dir, archivo + ".vcf")
 
-        # -------------------------
-        # FASTQ
-        # -------------------------
-        if fasta_files:
-            ref_path = os.path.join(input_dir, fasta_files[0])
-            datos_ref = read_fasta(ref_path)
-            ref_global, _ = validar_fasta_para_snp(datos_ref)
+            guardar_json(snps, json_out)
+            escribir_vcf(snps, vcf_out)
 
-            for archivo in fastq_files:
-                ruta = os.path.join(input_dir, archivo)
-                nombre_salida = archivo + "_resultado.json"
-                ruta_output = os.path.join(output_dir, nombre_salida)
+            resumen.append((archivo, len(snps)))
 
-                try:
-                    snps, calidad, porcentaje = procesar_fastq(
-                        ruta, ref_global, archivo
-                    )
+        except Exception as e:
+            print(f"Error en {archivo}: {e}")
 
-                    formatear_snps(archivo, snps)
+    print("\nResumen final:")
+    for a, n in resumen:
+        print(f"  {a}: {n} SNP(s)")
 
-                    guardar_json({
-                        "archivo": archivo,
-                        "tipo": "FASTQ",
-                        "total_snps": len(snps),
-                        "calidad_promedio": round(calidad, 2),
-                        "porcentaje_bases_buenas": round(porcentaje, 2),
-                        "snps": snps
-                    }, ruta_output)
-
-                    resumen_total.append({
-                        "archivo": archivo,
-                        "tipo": "FASTQ",
-                        "total_snps": len(snps),
-                        "calidad_promedio": round(calidad, 2),
-                        "porcentaje_bases_buenas": round(porcentaje, 2)
-                    })
-
-                except Exception as e:
-                    print(f"\n❌ Error en {archivo}: {e}")
-
-        else:
-            if fastq_files:
-                print("\n⚠ No hay FASTA de referencia para procesar FASTQ")
-
-        # -------------------------
-        # RESUMEN FINAL
-        # -------------------------
-        print("\n📊 Resumen final:")
-        for r in resumen_total:
-            if r["tipo"] == "FASTQ":
-                print(
-                    f"  {r['archivo']} ({r['tipo']}): "
-                    f"{r['total_snps']} SNP(s), "
-                    f"calidad={r['calidad_promedio']}, "
-                    f"bases_buenas={r['porcentaje_bases_buenas']}"
-                )
-            else:
-                print(
-                    f"  {r['archivo']} ({r['tipo']}): "
-                    f"{r['total_snps']} SNP(s)"
-                )
-
-        print("\n✅ Proceso terminado correctamente.\n")
-
-    except Exception as e:
-        print(f"\n🔥 Error general: {e}")
+    print("\n Pipeline terminado\n")
 
 
 if __name__ == "__main__":

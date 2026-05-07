@@ -1,33 +1,89 @@
-from quality import phred_score, phred_to_error_prob
+import math
 
 
-def detectar_snps(ref, paciente, qual=None):
+# -------------------------
+# CALCULAR QUAL (Phred)
+# -------------------------
+def calcular_qual(af):
+    """
+    Convierte frecuencia de variante en score Phred
+    """
+    if af >= 1:
+        return 60  # cap estándar
+
+    error_prob = 1 - af
+
+    if error_prob <= 0:
+        return 60
+
+    return round(-10 * math.log10(error_prob), 2)
+
+
+# -------------------------
+# CLASIFICAR GENOTIPO
+# -------------------------
+def clasificar_genotipo(af):
+    """
+    Clasificación simple tipo diploide
+    """
+    if af > 0.8:
+        return "HOM"  # homocigoto
+    elif af > 0.3:
+        return "HET"  # heterocigoto
+    else:
+        return "LOW"  # baja frecuencia
+
+
+# -------------------------
+# DETECTOR PRINCIPAL
+# -------------------------
+def detectar_snps_con_af(
+    ref,
+    conteo,
+    threshold=0.2,
+    min_dp=5
+):
+    """
+    SNP caller basado en:
+    - AF mínimo
+    - profundidad mínima
+    - cálculo de QUAL
+    """
+
     snps = []
 
-    for i, (r, p) in enumerate(zip(ref, paciente)):
-        if r == "-" or p == "-":
+    for i, ref_base in enumerate(ref[:len(conteo)]):
+
+        total = sum(conteo[i].values())
+
+        # ❌ filtro de profundidad
+        if total < min_dp:
             continue
 
-        if r == "N" or p == "N":
-            continue
+        for base, count in conteo[i].items():
 
-        if r != p:
-            snp = {
+            # ❌ ignorar referencia
+            if base == ref_base:
+                continue
+
+            af = count / total
+
+            # ❌ filtro AF
+            if af < threshold:
+                continue
+
+            qual = calcular_qual(af)
+            gt = clasificar_genotipo(af)
+
+            snps.append({
                 "posicion": i + 1,
-                "referencia": r,
-                "mutacion": p,
-                "tipo": "SNP"
-            }
-
-            # 🔥 NUEVO: calcular confianza si hay calidad
-            if qual:
-                q_score = phred_score(qual[i])
-                error_prob = phred_to_error_prob(q_score)
-                confianza = 1 - error_prob
-
-                snp["phred"] = q_score
-                snp["confianza"] = round(confianza, 6)
-
-            snps.append(snp)
+                "referencia": ref_base,
+                "mutacion": base,
+                "depth": total,
+                "alt_count": count,
+                "af": round(af, 3),
+                "qual": qual,
+                "genotipo": gt
+            })
 
     return snps
