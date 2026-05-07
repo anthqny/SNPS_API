@@ -1,0 +1,12 @@
+[
+    {
+        "posicion": 3,
+        "referencia": "C",
+        "mutacion": "G",
+        "depth": 5,
+        "alt_count": 5,
+        "af": 1.0,
+        "qual": 60,
+        "genotipo": "HOM"
+    }
+]
