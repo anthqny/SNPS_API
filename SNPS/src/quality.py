@@ -1,35 +1,30 @@
-# quality.py
-
 def phred_score(char):
     return ord(char) - 33
 
 
-def phred_to_error_prob(q):
+def prob_error(q):
     return 10 ** (-q / 10)
 
 
-def filtrar_calidad(seq, qual, threshold=20):
-    nueva = []
+def filtrar_calidad(seq, qual, min_q=20):
 
-    for base, q in zip(seq, qual):
-        if phred_score(q) >= threshold:
-            nueva.append(base)
+    resultado = []
+
+    for base, qchar in zip(seq, qual):
+
+        q = phred_score(qchar)
+
+        if q < min_q:
+            resultado.append("N")
         else:
-            nueva.append("N")
+            resultado.append(base)
 
-    return "".join(nueva)
+    return "".join(resultado)
 
+def promedio_calidad(qual):
+    scores = [phred_score(q) for q in qual]
 
-def calidad_promedio(qual):
-    if not qual:
+    if not scores:
         return 0
 
-    return sum(phred_score(q) for q in qual) / len(qual)
-
-
-def porcentaje_buenas(qual, threshold=20):
-    if not qual:
-        return 0
-
-    buenas = sum(1 for q in qual if phred_score(q) >= threshold)
-    return buenas / len(qual)
+    return sum(scores) / len(scores)

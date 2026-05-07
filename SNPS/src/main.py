@@ -44,7 +44,10 @@ def procesar_fastq(ruta_archivo, ref_global, nombre_archivo):
         ref_aligned, read_aligned = alinear(ref_global, seq_filtrada)
 
         ref_aligned_global = ref_aligned
-        reads_alineados.append(read_aligned)
+        reads_alineados.append({
+    "seq": read_aligned,
+    "qual": read["qual"][:len(read_aligned)]
+})
 
     if not reads_alineados:
         print(f"[WARN] {nombre_archivo}: sin lecturas útiles")

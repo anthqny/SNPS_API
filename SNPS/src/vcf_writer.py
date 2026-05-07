@@ -4,9 +4,6 @@ from datetime import datetime
 def escribir_vcf(snps, output_path):
     with open(output_path, "w") as f:
 
-        # -------------------------
-        # HEADERS
-        # -------------------------
         f.write("##fileformat=VCFv4.2\n")
         f.write(f"##fileDate={datetime.now().strftime('%Y%m%d')}\n")
         f.write("##source=MiVariantCaller_v3.0\n")
@@ -17,9 +14,6 @@ def escribir_vcf(snps, output_path):
 
         f.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n")
 
-        # -------------------------
-        # DATA
-        # -------------------------
         for snp in snps:
             chrom = "chr1"
             pos = snp["posicion"]
