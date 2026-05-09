@@ -1,68 +1,16 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 
 <head>
 
     <meta charset="UTF-8">
 
-    <title>SNP Detector</title>
+    <title>SNP Detection Platform</title>
 
-    <style>
-
-        body{
-            font-family: Arial, sans-serif;
-            background: #f4f4f4;
-            margin: 0;
-            padding: 40px;
-        }
-
-        .container{
-            max-width: 900px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-        }
-
-        h1{
-            color: #222;
-        }
-
-        input{
-            margin-top: 10px;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-
-        button{
-            background: #2563eb;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover{
-            background: #1d4ed8;
-        }
-
-        .resultado{
-            margin-top: 30px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background: #fafafa;
-        }
-
-        .snp{
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-    </style>
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
 
 </head>
 
@@ -70,89 +18,214 @@
 
     <div class="container">
 
-        <h1>🧬 SNP Detector</h1>
+        <header>
 
-        <form
-            action="/upload"
-            method="post"
-            enctype="multipart/form-data"
-        >
+            <h1>SNP Detection Platform</h1>
 
-            <label>
-                Archivo FASTA (referencia)
-            </label>
+            <p class="subtitle">
+                Simplified genomic analysis using FASTA and FASTQ sequencing data
+            </p>
 
-            <input
-                type="file"
-                name="fasta"
-                required
+        </header>
+
+        <section class="intro">
+
+            <h2>About this platform</h2>
+
+            <p>
+                This system compares sequencing reads (FASTQ)
+                against a genomic reference (FASTA)
+                to identify Single Nucleotide Polymorphisms (SNPs).
+            </p>
+
+            <p>
+                The analysis evaluates:
+            </p>
+
+            <ul>
+                <li>Base mismatches</li>
+                <li>Allele frequency</li>
+                <li>Read depth</li>
+                <li>Quality score</li>
+                <li>Genotype classification</li>
+            </ul>
+
+        </section>
+
+        <section class="upload-box">
+
+            <form
+                action="/upload"
+                method="post"
+                enctype="multipart/form-data"
             >
 
-            <label>
-                Archivo FASTQ (reads)
-            </label>
+                <label>
+                    Reference Genome (FASTA)
+                </label>
 
-            <input
-                type="file"
-                name="fastq"
-                required
-            >
+                <input
+                    type="file"
+                    name="fasta"
+                    required
+                >
 
-            <button type="submit">
-                Analizar SNPs
-            </button>
+                <label>
+                    Sequencing Reads (FASTQ)
+                </label>
 
-        </form>
+                <input
+                    type="file"
+                    name="fastq"
+                    required
+                >
+
+                <button type="submit">
+                    Run SNP Analysis
+                </button>
+
+            </form>
+
+        </section>
 
         {% if resultados %}
 
-            <div class="resultado">
+            <section class="results">
 
-                <h2>
-                    Resultados SNP
-                </h2>
+                <h2>SNP Results</h2>
 
                 {% for r in resultados %}
 
-                    <div class="snp">
+                    <div class="card">
 
-                        <strong>
-                            Posición {{ r.pos }}
-                        </strong>
+                        <div class="grid">
 
-                        <br>
+                            <div>
+                                <strong>Position</strong>
+                                <p>{{ r.pos }}</p>
+                            </div>
 
-                        {{ r.ref }}
-                        →
-                        {{ r.alt }}
+                            <div>
+                                <strong>Mutation</strong>
+                                <p>{{ r.ref }} → {{ r.alt }}</p>
+                            </div>
 
-                        <br>
+                            <div>
+                                <strong>AF</strong>
+                                <p>{{ r.af }}</p>
+                            </div>
 
-                        AF:
-                        {{ r.af }}
+                            <div>
+                                <strong>DP</strong>
+                                <p>{{ r.dp }}</p>
+                            </div>
 
-                        <br>
+                            <div>
+                                <strong>QUAL</strong>
+                                <p>{{ r.qual }}</p>
+                            </div>
 
-                        DP:
-                        {{ r.dp }}
+                            <div>
+                                <strong>GT</strong>
+                                <p>{{ r.gt }}</p>
+                            </div>
 
-                        <br>
+                        </div>
 
-                        QUAL:
-                        {{ r.qual }}
+                        <div class="sequence-box">
 
-                        <br>
+    <div class="sequence-line">
 
-                        GT:
-                        {{ r.gt }}
+        <span class="label">
+            REF
+        </span>
+
+        {% for base in r.referencia %}
+
+            {% if loop.index == r.pos %}
+
+                <span class="base snp-ref">
+                    {{ base }}
+                </span>
+
+            {% else %}
+
+                <span class="base">
+                    {{ base }}
+                </span>
+
+            {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+    <div class="sequence-line">
+
+        <span class="label">
+            READ
+        </span>
+
+        {% for base in r.read %}
+
+            {% if loop.index == r.pos %}
+
+                <span class="base snp-alt">
+                    {{ base }}
+                </span>
+
+            {% else %}
+
+                <span class="base">
+                    {{ base }}
+                </span>
+
+            {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+</div>
 
                     </div>
 
                 {% endfor %}
 
-            </div>
+            </section>
 
         {% endif %}
+
+        <section class="glossary">
+
+            <h2>Glossary</h2>
+
+            <p>
+                <strong>SNP:</strong>
+                Single Nucleotide Polymorphism.
+            </p>
+
+            <p>
+                <strong>AF:</strong>
+                Allele Frequency.
+            </p>
+
+            <p>
+                <strong>DP:</strong>
+                Read Depth.
+            </p>
+
+            <p>
+                <strong>QUAL:</strong>
+                Variant confidence score.
+            </p>
+
+            <p>
+                <strong>GT:</strong>
+                Genotype classification.
+            </p>
+
+        </section>
 
     </div>
 
