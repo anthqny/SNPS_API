@@ -1,15 +1,22 @@
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
 from Bio import SeqIO
+
 import math
 import io
 
 app = FastAPI()
 
-templates = Jinja2Templates(
-    directory="app/templates"
+app.mount(
+    "/static",
+    StaticFiles(directory="app/static"),
+    name="static"
 )
+
+templates = Jinja2Templates(directory="app/templates")
 
 MIN_PHRED = 10
 
@@ -30,9 +37,10 @@ def calcular_qual(af, dp):
 async def home(request: Request):
 
     return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={
+        request,
+        "index.html",
+        {
+            "request": request,
             "resultados": None
         }
     )
@@ -46,10 +54,6 @@ async def upload_files(
 ):
 
     resultados = []
-
-    # =========================
-    # LEER FASTA
-    # =========================
 
     fasta_content = await fasta.read()
 
@@ -65,10 +69,6 @@ async def upload_files(
         fasta_records[0].seq
     )
 
-    # =========================
-    # LEER FASTQ
-    # =========================
-
     fastq_content = await fastq.read()
 
     fastq_io = io.StringIO(
@@ -81,25 +81,15 @@ async def upload_files(
 
     conteo = {}
 
-    total_reads = 0
-
-    # =========================
-    # COMPARAR
-    # =========================
+    total_reads = len(reads)
 
     for read in reads:
 
         seq = str(read.seq)
 
-        quals = read.letter_annotations[
-            "phred_quality"
-        ]
+        quals = read.letter_annotations["phred_quality"]
 
-        total_reads += 1
-
-        for i in range(
-            min(len(seq), len(referencia))
-        ):
+        for i in range(min(len(seq), len(referencia))):
 
             if quals[i] < MIN_PHRED:
                 continue
@@ -111,37 +101,30 @@ async def upload_files(
             if ref_base == alt_base:
                 continue
 
-            key = (
-                i + 1,
-                ref_base,
-                alt_base
-            )
+            key = (i + 1, ref_base, alt_base)
 
-            conteo[key] = (
-                conteo.get(key, 0) + 1
-            )
+            if key not in conteo:
 
-    # =========================
-    # RESULTADOS
-    # =========================
+                conteo[key] = {
+                    "count": 0,
+                    "read_seq": seq
+                }
 
-    for (pos, ref, alt), count in conteo.items():
+            conteo[key]["count"] += 1
 
-        af = round(
-            count / total_reads,
-            2
-        )
+    for (pos, ref, alt), data in conteo.items():
 
-        gt = (
-            "HOM"
-            if af >= 0.8
-            else "HET"
-        )
+        count = data["count"]
 
-        qual = calcular_qual(
-            af,
-            total_reads
-        )
+        af = round(count / total_reads, 2)
+
+        gt = "HOM" if af >= 0.8 else "HET"
+
+        qual = calcular_qual(af, total_reads)
+
+        read_seq = data["read_seq"]
+
+        pointer = " " * (pos + 6) + "^"
 
         resultados.append({
 
@@ -151,14 +134,18 @@ async def upload_files(
             "af": af,
             "dp": total_reads,
             "qual": qual,
-            "gt": gt
+            "gt": gt,
 
+            "referencia": referencia,
+            "read": read_seq,
+            "pointer": pointer
         })
 
     return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={
+        request,
+        "index.html",
+        {
+            "request": request,
             "resultados": resultados
         }
     )
